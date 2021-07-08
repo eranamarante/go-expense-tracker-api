@@ -8,7 +8,9 @@ import (
 	"net/http"
 
 	"github.com/eranamarante/go-react-expense-tracker/server/database"
+	"github.com/eranamarante/go-react-expense-tracker/server/helper"
 	"github.com/eranamarante/go-react-expense-tracker/server/models"
+	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,13 +21,7 @@ var expensesCollection *mongo.Collection = database.OpenCollection(database.Clie
 
 func GetAllExpenses(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	payload := getAllExpenses()
-	json.NewEncoder(w).Encode(payload)
-}
-
-func getAllExpenses() []primitive.M  {
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{primitive.E{Key: "_id", Value: -1}})
 
@@ -42,7 +38,7 @@ func getAllExpenses() []primitive.M  {
 			log.Fatal(e)
 		}
 
-		results =  append(results, result)
+		results = append(results, result)
 	}
 
 	if err := cur.Err(); err != nil {
@@ -50,28 +46,56 @@ func getAllExpenses() []primitive.M  {
 	}
 
 	cur.Close(context.Background())
-	return results
+
+	json.NewEncoder(w).Encode(results)
 }
 
-func AddExpense(w http.ResponseWriter, r *http.Request)  {
+func GetExpense(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Methods", "POST")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-	
-	var expense models.Expense
-	json.NewDecoder(r.Body).Decode(&expense)
 
-	addExpense(expense)
+	params := mux.Vars(r)
+
+	id, _ := primitive.ObjectIDFromHex(params["id"])
+
+	var expense bson.M
+	filter := bson.M{"_id": id}
+	if err := expensesCollection.FindOne(context.Background(), filter).Decode(&expense); err != nil {
+		log.Fatal(err)
+	}
+
 	json.NewEncoder(w).Encode(expense)
 }
 
-func addExpense(task models.Expense) {
-	insertResult, err := expensesCollection.InsertOne(context.Background(), task)
+func AddExpense(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	var expense models.Expense
+	json.NewDecoder(r.Body).Decode(&expense)
+
+	insertResult, err := expensesCollection.InsertOne(context.Background(), expense)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	fmt.Println("Inserted a Single Record ", insertResult.InsertedID)
+	json.NewEncoder(w).Encode(expense)
+}
+
+func DeleteExpense(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	params := mux.Vars(r)
+
+	id, _ := primitive.ObjectIDFromHex(params["id"])
+
+	filter := bson.M{"_id": id}
+	deleteResult, err := expensesCollection.DeleteOne(context.Background(), filter)
+
+	if err != nil {
+		helper.GetError(err, w)
+		return
+	}
+
+	json.NewEncoder(w).Encode(deleteResult)
 }
