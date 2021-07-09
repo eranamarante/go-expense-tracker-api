@@ -9,8 +9,8 @@ func Router() *mux.Router {
 	r := mux.NewRouter()
 
 	// Auth Endpoints
-	// r.HandleFunc("api/auth/login", authMiddleware.Login).Methods("POST", "OPTIONS")
-	// r.HandleFunc("api/auth/login", authMiddleware.Signup).Methods("POST", "OPTIONS")
+	// r.HandleFunc("/api/auth/login", authMiddleware.Login).Methods("POST")
+	// r.HandleFunc("/api/auth/login", authMiddleware.Signup).Methods("POST")
 
 	// Expense Endpoints
 	r.HandleFunc("/api/expenses", middleware.GetAllExpenses).Methods("GET")
