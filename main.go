@@ -1,19 +1,38 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
+	"os"
 
-	"github.com/eranamarante/go-react-expense-tracker/server/helper"
-	"github.com/eranamarante/go-react-expense-tracker/server/router"
+	middleware "github.com/eranamarante/go-jwt-auth-api/middleware"
+	routes "github.com/eranamarante/go-jwt-auth-api/routes"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	port := helper.GetConfiguration().Port
+	port := os.Getenv("PORT")
 
-	r := router.Router()
+	if port == "" {
+		port = "8000"
+	}
 
-	fmt.Printf("Starting server on the port %v ... \n", port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	router := gin.New()
+	router.Use(gin.Logger())
+	routes.UserRoutes(router)
+
+	router.Use(middleware.Authentication())
+
+	// API-2
+	router.GET("/api-1", func(c *gin.Context) {
+
+		c.JSON(200, gin.H{"success": "Access granted for api-1"})
+
+	})
+
+	// API-1
+	router.GET("/api-2", func(c *gin.Context) {
+		c.JSON(200, gin.H{"success": "Access granted for api-2"})
+	})
+
+	router.Run(":" + port)
 }

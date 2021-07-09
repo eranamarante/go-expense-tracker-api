@@ -1,55 +1,37 @@
 package middleware
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
-	"github.com/dgrijalva/jwt-go"
-	"github.com/eranamarante/go-expense-tracker-api/helper"
+	helper "github.com/eranamarante/go-expense-tracker-api/helpers"
+
+	"github.com/gin-gonic/gin"
 )
 
-func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-
-		if r.Header["Token"] == nil {
-			var err helper.Error
-			err = helper.SetError(err, "No Token Found")
-			json.NewEncoder(w).Encode(err)
+// Authz validates token and authorizes users
+func Authentication() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		clientToken := c.Request.Header.Get("token")
+		if clientToken == "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("No Authorization header provided")})
+			c.Abort()
 			return
 		}
 
-		var mySigningKey = []byte(helper.GetConfiguration().SecretKey)
-
-		token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
-			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("There was an error in parsing token.")
-			}
-			return mySigningKey, nil
-		})
-
-		if err != nil {
-			var err helper.Error
-			err = helper.SetError(err, "Your Token has been expired.")
-			json.NewEncoder(w).Encode(err)
+		claims, err := helper.ValidateToken(clientToken)
+		if err != "" {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			c.Abort()
 			return
 		}
 
-		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-			if claims["role"] == "admin" {
-				r.Header.Set("Role", "admin")
-				handler.ServeHTTP(w, r)
-				return
+		c.Set("email", claims.Email)
+		c.Set("first_name", claims.First_name)
+		c.Set("last_name", claims.Last_name)
+		c.Set("uid", claims.Uid)
 
-			} else if claims["role"] == "user" {
-				r.Header.Set("Role", "user")
-				handler.ServeHTTP(w, r)
-				return
+		c.Next()
 
-			}
-		}
-		var reserr helper.Error
-		reserr = helper.SetError(reserr, "Not Authorized.")
-		json.NewEncoder(w).Encode(err)
 	}
 }

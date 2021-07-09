@@ -1,12 +1,12 @@
-module github.com/eranamarante/go-expense-tracker-api
+module github.com/eranamarante/go-jwt-auth-api
 
 go 1.16
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/eranamarante/go-react-expense-tracker v0.0.0-20210709035441-1dc8c80c5268
-	github.com/gorilla/mux v1.8.0
-	github.com/joho/godotenv v1.3.0
-	go.mongodb.org/mongo-driver v1.5.4
-	golang.org/x/crypto v0.0.0-20210616213533-5ff15b29337e
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/gin-gonic/gin v1.7.2
+	github.com/go-playground/validator/v10 v10.4.1 // indirect
+	github.com/joho/godotenv v1.3.0 // indirect
+	go.mongodb.org/mongo-driver v1.5.4 // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9 // indirect
 )
