@@ -6,19 +6,20 @@ import (
 	"net/http"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/eranamarante/go-expense-tracker-api/helper"
 )
 
 func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		if r.Header["Token"] == nil {
-			var err Error
-			err = SetError(err, "No Token Found")
+			var err helper.Error
+			err = helper.SetError(err, "No Token Found")
 			json.NewEncoder(w).Encode(err)
 			return
 		}
 
-		var mySigningKey = []byte(secretkey)
+		var mySigningKey = []byte(helper.GetConfiguration().SecretKey)
 
 		token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
@@ -28,8 +29,8 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 		})
 
 		if err != nil {
-			var err Error
-			err = SetError(err, "Your Token has been expired.")
+			var err helper.Error
+			err = helper.SetError(err, "Your Token has been expired.")
 			json.NewEncoder(w).Encode(err)
 			return
 		}
@@ -47,8 +48,8 @@ func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
 
 			}
 		}
-		var reserr Error
-		reserr = SetError(reserr, "Not Authorized.")
+		var reserr helper.Error
+		reserr = helper.SetError(reserr, "Not Authorized.")
 		json.NewEncoder(w).Encode(err)
 	}
 }

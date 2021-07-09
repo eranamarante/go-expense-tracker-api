@@ -13,14 +13,34 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// ErrorResponse : This is error model.
+type Authentication struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type Token struct {
+	Role        string `json:"role"`
+	Email       string `json:"email"`
+	TokenString string `json:"token"`
+}
+
+type Configuration struct {
+	Port             string
+	ConnectionString string
+	DatabaseName     string
+	SecretKey        string
+}
+
 type ErrorResponse struct {
 	StatusCode   int    `json:"status"`
 	ErrorMessage string `json:"message"`
 }
 
-// GetError : This is helper function to prepare error model.
-// If you want to export your function. You must to start upper case function name. Otherwise you won't see your function when you import that on other class.
+type Error struct {
+	IsError bool   `json:"isError"`
+	Message string `json:"message"`
+}
+
 func GetError(err error, w http.ResponseWriter) {
 
 	log.Fatal(err.Error())
@@ -35,25 +55,12 @@ func GetError(err error, w http.ResponseWriter) {
 	w.Write(message)
 }
 
-type Configuration struct {
-	Port             string
-	ConnectionString string
-	DatabaseName     string
-	SecretKey        string
+func SetError(err Error, message string) Error {
+	err.IsError = true
+	err.Message = message
+	return err
 }
 
-type Authentication struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
-
-type Token struct {
-	Role        string `json:"role"`
-	Email       string `json:"email"`
-	TokenString string `json:"token"`
-}
-
-// GetConfiguration method basically populate configuration information from .env and return Configuration model
 func GetConfiguration() Configuration {
 	err := godotenv.Load(os.ExpandEnv("$GOPATH/src/github.com/eranamarante/go-react-expense-tracker/.env"))
 
@@ -81,8 +88,8 @@ func CheckPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func GenerateJWT(email, role string) (string, error) {
-	var mySigningKey = []byte(GetConfiguration().SecretKey)
+func GenerateJWT(email, role, secretkey string) (string, error) {
+	var mySigningKey = []byte(secretkey)
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["authorized"] = true
