@@ -1,1 +1,1 @@
-# go-react-expense-tracker
+# go-expense-tracker-api
