@@ -157,3 +157,39 @@ func DeleteExpense() gin.HandlerFunc {
 		c.JSON(http.StatusOK, d)
 	}
 }
+
+func ToggleStatus() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var foundExpense models.Expense
+
+		id, _ := primitive.ObjectIDFromHex(c.Param("id"))
+		filter := bson.M{"_id": id}
+
+		err := expenseCollection.FindOne(ctx, filter).Decode(&foundExpense)
+		if err != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Expense not found"})
+			return
+		}
+
+		foundExpense.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
+		result, err := expenseCollection.UpdateOne(
+			ctx,
+			bson.M{"_id": id},
+			bson.D{
+				{Key: "$set", Value: bson.D{
+					{Key: "is_paid", Value: !foundExpense.IsPaid},
+					{Key: "updated_at", Value: foundExpense.UpdatedAt},
+				}},
+			},
+		)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		c.JSON(http.StatusOK, result)
+
+	}
+}
